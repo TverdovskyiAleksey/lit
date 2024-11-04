@@ -53,7 +53,7 @@ export class TodoItem extends LitElement {
         }
     `;
 
-    @property({type: Array}) todo: TodosList[] = [];
+    @property({type: Object}) todo: TodosList | null = null;
     @property({ type: String }) name!: string;
     @property({ type: Boolean }) completed = false;
     @property({type: Boolean}) isEditClicked = false;
@@ -71,8 +71,10 @@ export class TodoItem extends LitElement {
     }
 
     onUpdateTodoName = (event: KeyboardEvent) => {
-        const input = event.target as HTMLInputElement;
-        this.todo.name = input.value;
+        if (this.todo) {
+            const input = event.target as HTMLInputElement;
+            this.todo.name = input.value;
+        }
     }
 
     render() {
