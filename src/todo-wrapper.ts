@@ -43,7 +43,28 @@ export class TodoWrapper extends LitElement {
         {id: 2, name: 'Learn React', completed: true},
         {id: 22, name: 'Learn JS', completed: true},
     ];
+    @property() private currentTodos: TodosList[] = [];
+    @property() private completedTodos: TodosList[] = [];
     @query("input") textField!: HTMLInputElement;
+
+    willUpdate(changedProperties: Map<string | number | symbol, unknown>) {
+        super.willUpdate(changedProperties);
+
+        const {currentTodos, completedTodos} = this.todoList.reduce<{
+            currentTodos: TodosList[],
+            completedTodos: TodosList[]
+        }>((acc, todo) => {
+            if (todo.completed) {
+                acc.completedTodos.push(todo);
+            } else {
+                acc.currentTodos.push(todo);
+            }
+            return acc;
+        }, {currentTodos: [], completedTodos: []});
+
+        this.currentTodos = currentTodos;
+        this.completedTodos = completedTodos;
+    }
 
     onAddTodo(event: KeyboardEvent) {
         if (event.key === "Enter") {
@@ -56,20 +77,29 @@ export class TodoWrapper extends LitElement {
         }
     }
 
-    removeTodo(currentId: number) {
+    removeTodo(evt: CustomEvent) {
+        const currentId = evt.detail;
         this.todoList = this.todoList.filter(todo => todo.id !== currentId);
     }
 
-    onToggleComplete = (id: number)=> {
-        this.todoList = this.todoList.map(todo =>
-            todo.id === id ? {...todo, completed: !todo.completed} : todo
+    onToggleComplete = (evt: CustomEvent) => {
+        const currentId = evt.detail;
+        this.todoList = this.todoList.map(todo => todo.id === currentId ? {...todo, completed: !todo.completed} : todo
         );
     }
 
-    render() {
-        const currentTodos = this.todoList.filter(todo => !todo.completed);
-        const completedTodos = this.todoList.filter(todo => todo.completed);
+    renderTodoList(todos: TodosList[], listName: string) {
+        return html`
+            <ul class="wrapper">
+                <h2>${listName}</h2>
+                ${repeat(todos, (todo) => todo.id, (todo) => {
+                    return html`<todo-item .todo=${todo} @remove=${this.removeTodo} @toggle=${this.onToggleComplete}></todo-item>`
+                })}
+            </ul>
+        `
+    }
 
+    render() {
         return html`
             <div>
                 <input 
@@ -79,32 +109,8 @@ export class TodoWrapper extends LitElement {
                         @keydown=${this.onAddTodo}
                 >
                 <div style="display: flex; text-align: start">
-                    <ul class="wrapper">
-                        <h2>Current Tasks</h2>
-                        ${repeat(currentTodos, (todo) => todo.id, (todo) => {
-                            return html`
-                                <todo-item
-                                        .todo=${todo}
-                                        .removeTodo=${() => this.removeTodo(todo?.id)}
-                                        .onToggleComplete=${() => this.onToggleComplete(todo?.id)}
-                                >
-                                </todo-item>
-                            `
-                        })}
-                    </ul>
-                    <ul class="wrapper">
-                        <h2>Completed Tasks</h2>
-                        ${repeat(completedTodos, (todo) => todo.id, (todo) => {
-                            return html`
-                                <todo-item
-                                        .todo=${todo}
-                                        .removeTodo=${() => this.removeTodo(todo?.id)}
-                                        .onToggleComplete=${() => this.onToggleComplete(todo?.id)}
-                                >
-                                </todo-item>
-                            `
-                        })}
-                    </ul>
+                    ${this.renderTodoList(this.currentTodos, "Current Todos")}
+                    ${this.renderTodoList(this.completedTodos, "Completed Todos")}
                 </div>
             </div>
         `

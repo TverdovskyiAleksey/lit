@@ -1,5 +1,6 @@
-import { LitElement, html, css } from 'lit';
-import {customElement, property, query} from 'lit/decorators.js'
+import {LitElement, html, css, nothing} from 'lit';
+import {customElement, property, query, state} from 'lit/decorators.js'
+import {ifDefined} from 'lit/directives/if-defined.js';
 
 interface TodosList {
     id: number;
@@ -52,13 +53,8 @@ export class TodoItem extends LitElement {
             text-align: start;
         }
     `;
-
     @property({type: Object}) todo: TodosList | null = null;
-    @property({ type: String }) name!: string;
-    @property({ type: Boolean }) completed = false;
-    @property({type: Boolean}) isEditClicked = false;
-    @property({ type: Function }) removeTodo!: () => void;
-    @property({ type: Function }) onToggleComplete!: () => void;
+    @state() isEditClicked = false;
 
     @query("input") textField!: HTMLInputElement;
 
@@ -77,6 +73,24 @@ export class TodoItem extends LitElement {
         }
     }
 
+    removeTodo() {
+        if (this.todo) {
+            this.dispatchEvent(new CustomEvent('remove', {
+                detail: this.todo.id,
+                bubbles: true,
+            }))
+        }
+    }
+
+    onToggleComplete() {
+        if (this.todo) {
+            this.dispatchEvent(new CustomEvent('toggle', {
+                detail: this.todo.id,
+                bubbles: true,
+            }))
+        }
+    }
+
     render() {
         return html`
             <li>
@@ -86,17 +100,17 @@ export class TodoItem extends LitElement {
                     @change=${this.onToggleComplete}
                 />
                 ${this.isEditClicked 
-                        ? html`<input type="text" class="editTextField" value=${this.todo?.name} @input=${this.onUpdateTodoName}>` 
+                        ? html`<input type="text" class="editTextField" value=${ifDefined(this.todo?.name)} @input=${this.onUpdateTodoName}>`
                         : html`<p class="todoName">${this.todo?.name}</p>`
                 }
-                ${!this.completed
-                        ? html`
+                ${this.todo?.completed
+                        ? nothing
+                        : html`
                             ${this.isEditClicked
                                     ? html`<button class="saveBtn" @click=${this.onSaveBtnClick}>Save</button>`
                                     : html`<button class="editBtn" @click=${this.onEditBtnClick}>Edit</button>`
                             }
                         `
-                        : ''
                 }
                 <button class="deleteBtn" @click=${this.removeTodo}>Remove</button>
             </li>
