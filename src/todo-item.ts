@@ -1,5 +1,7 @@
-import { LitElement, html, css } from 'lit';
-import {customElement, property, query} from 'lit/decorators.js'
+// https://lit.dev/docs/templates/conditionals/#conditionally-rendering-nothing
+import { LitElement, html, css, nothing } from 'lit';
+import {customElement, property, query, state} from 'lit/decorators.js'
+import { ifDefined } from 'lit/directives/if-defined.js';
 
 interface TodosList {
     id: number;
@@ -53,13 +55,24 @@ export class TodoItem extends LitElement {
         }
     `;
 
+    /**
+     * not all your reactive properties should be wrapped in @property decorator
+     * All such properties is public that means parent components have access to it and this is not a good practice.
+     * if you need to have reactive property to force rerender and this is local property that are not passing from parent to this component
+     * it should be wrapped in @state decorator to force encapsulation and make it very clear it is managed only by this component
+     *  */ 
     @property({type: Object}) todo: TodosList | null = null;
-    @property({ type: String }) name!: string;
-    @property({ type: Boolean }) completed = false;
-    @property({type: Boolean}) isEditClicked = false;
-    @property({ type: Function }) removeTodo!: () => void;
+    // needs to be removed as it is not used
+    // @state() name!: string;
+    // @state() completed = false;
+    @state() isEditClicked = false;
+
+    /**
+     * also i dont understand why this is created as property this is not reactive and this is just callbacks. It should not be a property
+     */
     @property({ type: Function }) onToggleComplete!: () => void;
 
+    // this is very good
     @query("input") textField!: HTMLInputElement;
 
     onEditBtnClick = () => {
@@ -77,6 +90,16 @@ export class TodoItem extends LitElement {
         }
     }
 
+    removeTodo() {
+        if(this.todo) {
+            this.dispatchEvent(new CustomEvent('remove', {
+                detail: this.todo.id,
+                bubbles: true,
+                composed:true
+            }))
+        }
+    }
+
     render() {
         return html`
             <li>
@@ -86,17 +109,17 @@ export class TodoItem extends LitElement {
                     @change=${this.onToggleComplete}
                 />
                 ${this.isEditClicked 
-                        ? html`<input type="text" class="editTextField" value=${this.todo?.name} @input=${this.onUpdateTodoName}>` 
+                        ? html`<input type="text" class="editTextField" value=${ifDefined(this.todo?.name)} @input=${this.onUpdateTodoName}>` 
                         : html`<p class="todoName">${this.todo?.name}</p>`
                 }
-                ${!this.completed
-                        ? html`
+                ${this.todo?.completed
+                        ? nothing 
+                        : html`
                             ${this.isEditClicked
                                     ? html`<button class="saveBtn" @click=${this.onSaveBtnClick}>Save</button>`
                                     : html`<button class="editBtn" @click=${this.onEditBtnClick}>Edit</button>`
                             }
                         `
-                        : ''
                 }
                 <button class="deleteBtn" @click=${this.removeTodo}>Remove</button>
             </li>

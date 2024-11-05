@@ -56,7 +56,8 @@ export class TodoWrapper extends LitElement {
         }
     }
 
-    removeTodo(currentId: number) {
+    removeTodo(evt: CustomEvent) {
+        const currentId = evt.detail;
         this.todoList = this.todoList.filter(todo => todo.id !== currentId);
     }
 
@@ -65,8 +66,12 @@ export class TodoWrapper extends LitElement {
             todo.id === id ? {...todo, completed: !todo.completed} : todo
         );
     }
-
+    
     render() {
+        /**
+         * you dont have to filter array twice to understand what should be in completed and not completed list
+         * it could be done in single loop. In addition it is not a good idea to do it render function it should be dont in willUpdate lifecycle
+         */ 
         const currentTodos = this.todoList.filter(todo => !todo.completed);
         const completedTodos = this.todoList.filter(todo => todo.completed);
 
@@ -85,7 +90,7 @@ export class TodoWrapper extends LitElement {
                             return html`
                                 <todo-item
                                         .todo=${todo}
-                                        .removeTodo=${() => this.removeTodo(todo?.id)}
+                                        @remove=${this.removeTodo}
                                         .onToggleComplete=${() => this.onToggleComplete(todo?.id)}
                                 >
                                 </todo-item>
@@ -98,7 +103,7 @@ export class TodoWrapper extends LitElement {
                             return html`
                                 <todo-item
                                         .todo=${todo}
-                                        .removeTodo=${() => this.removeTodo(todo?.id)}
+                                        @remove=${this.removeTodo}
                                         .onToggleComplete=${() => this.onToggleComplete(todo?.id)}
                                 >
                                 </todo-item>
