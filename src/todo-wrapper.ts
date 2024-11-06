@@ -43,28 +43,7 @@ export class TodoWrapper extends LitElement {
         {id: 2, name: 'Learn React', completed: true},
         {id: 22, name: 'Learn JS', completed: true},
     ];
-    @property() private currentTodos: TodosList[] = [];
-    @property() private completedTodos: TodosList[] = [];
     @query("input") textField!: HTMLInputElement;
-
-    willUpdate(changedProperties: Map<string | number | symbol, unknown>) {
-        super.willUpdate(changedProperties);
-
-        const {currentTodos, completedTodos} = this.todoList.reduce<{
-            currentTodos: TodosList[],
-            completedTodos: TodosList[]
-        }>((acc, todo) => {
-            if (todo.completed) {
-                acc.completedTodos.push(todo);
-            } else {
-                acc.currentTodos.push(todo);
-            }
-            return acc;
-        }, {currentTodos: [], completedTodos: []});
-
-        this.currentTodos = currentTodos;
-        this.completedTodos = completedTodos;
-    }
 
     onAddTodo(event: KeyboardEvent) {
         if (event.key === "Enter") {
@@ -88,11 +67,12 @@ export class TodoWrapper extends LitElement {
         );
     }
 
-    renderTodoList(todos: TodosList[], listName: string) {
+    renderTodoList(todos: TodosList[], listName: string, completed: boolean) {
         return html`
             <ul class="wrapper">
                 <h2>${listName}</h2>
-                ${repeat(todos, (todo) => todo.id, (todo) => {
+                ${repeat(todos.filter((item) => completed ? item.completed : !item.completed
+                ), (todo) => todo.id, (todo) => {
                     return html`<todo-item .todo=${todo} @remove=${this.removeTodo} @toggle=${this.onToggleComplete}></todo-item>`
                 })}
             </ul>
@@ -109,8 +89,8 @@ export class TodoWrapper extends LitElement {
                         @keydown=${this.onAddTodo}
                 >
                 <div style="display: flex; text-align: start">
-                    ${this.renderTodoList(this.currentTodos, "Current Todos")}
-                    ${this.renderTodoList(this.completedTodos, "Completed Todos")}
+                    ${this.renderTodoList(this.todoList, "Current Todos", false)}
+                    ${this.renderTodoList(this.todoList, "Completed Todos", true)}
                 </div>
             </div>
         `
